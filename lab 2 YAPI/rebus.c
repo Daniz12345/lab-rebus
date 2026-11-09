@@ -18,6 +18,7 @@ int  used[10];
 int       index_of[26];
 long long coef[10];
 int       is_leading[10];
+long long rest[11];
 
 int parse_rebus(const char* rebus) {
     int len = 0;
@@ -92,9 +93,20 @@ void compute_coefficients(void) {
     }
 }
 
+void compute_rest(void) {
+    rest[letter_count] = 0;
+    for (int k = letter_count - 1; k >= 0; k--) {
+        long long a = coef[k] >= 0 ? coef[k] : -coef[k];
+        rest[k] = rest[k + 1] + 9 * a;
+    }
+}
+
 int search(int k, long long sum) {
     if (k == letter_count)
         return sum == 0;
+
+    if (sum > rest[k] || sum < -rest[k])
+        return 0;
 
     for (int d = 0; d <= 9; d++) {
         if (used[d])
@@ -138,6 +150,7 @@ int solve_rebus(const char* rebus, char* result) {
     if (!collect_letters())
         return 0;
     compute_coefficients();
+    compute_rest();
 
     memset(used, 0, sizeof(used));
     memset(digit_of, 0, sizeof(digit_of));
