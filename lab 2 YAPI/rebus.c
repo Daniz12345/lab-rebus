@@ -92,18 +92,9 @@ void compute_coefficients(void) {
     }
 }
 
-int check_solution(void) {
-    long long sum = 0;
-
-    for (int k = 0; k < letter_count; k++)
-        sum += coef[k] * digit_of[letters[k] - 'A'];
-
-    return sum == 0;
-}
-
-int search(int k) {
+int search(int k, long long sum) {
     if (k == letter_count)
-        return check_solution();
+        return sum == 0;
 
     for (int d = 0; d <= 9; d++) {
         if (used[d])
@@ -114,7 +105,7 @@ int search(int k) {
         used[d] = 1;
         digit_of[letters[k] - 'A'] = d;
 
-        if (search(k + 1))
+        if (search(k + 1, sum + coef[k] * d))
             return 1;
 
         used[d] = 0;
@@ -151,7 +142,7 @@ int solve_rebus(const char* rebus, char* result) {
     memset(used, 0, sizeof(used));
     memset(digit_of, 0, sizeof(digit_of));
 
-    if (!search(0))
+    if (!search(0, 0))
         return 0;
 
     build_answer(result);
