@@ -1,20 +1,23 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
 #define MAX_WORDS 8
-#define MAX_LEN 17
-#define MAX_LINE 512
+#define MAX_LEN   17
+#define MAX_LINE  512
 
 char words[MAX_WORDS][MAX_LEN];
-int word_count;
+int  word_count;
 
 char letters[10];
-int letter_count;
+int  letter_count;
 
-int digit_of[26];
-int used[10];
+int  digit_of[26];
+int  used[10];
+
+int       index_of[26];
+long long coef[10];
+int       is_leading[10];
 
 int parse_rebus(const char* rebus) {
     int len = 0;
@@ -59,6 +62,7 @@ int collect_letters(void) {
                 if (letter_count == 10)
                     return 0;
                 letters[letter_count] = words[w][i];
+                index_of[c] = letter_count;
                 letter_count++;
             }
         }
@@ -66,24 +70,39 @@ int collect_letters(void) {
     return 1;
 }
 
-long long word_value(const char* word) {
-    long long value = 0;
-    for (int i = 0; word[i] != '\0'; i++)
-        value = value * 10 + digit_of[word[i] - 'A'];
-    return value;
+void compute_coefficients(void) {
+    memset(coef, 0, sizeof(coef));
+    memset(is_leading, 0, sizeof(is_leading));
+
+    for (int w = 0; w < word_count; w++) {
+        int len = (int)strlen(words[w]);
+        long long power = 1;
+
+        for (int i = len - 1; i >= 0; i--) {
+            int k = index_of[words[w][i] - 'A'];
+            if (w < word_count - 1)
+                coef[k] += power;
+            else
+                coef[k] -= power;
+            power *= 10;
+        }
+
+        if (len > 1)
+            is_leading[index_of[words[w][0] - 'A']] = 1;
+    }
 }
 
 int check_solution(void) {
-    for (int w = 0; w < word_count; w++) {
-        if (strlen(words[w]) > 1 && digit_of[words[w][0] - 'A'] == 0)
+    long long sum = 0;
+
+    for (int k = 0; k < letter_count; k++) {
+        int d = digit_of[letters[k] - 'A'];
+        if (d == 0 && is_leading[k])
             return 0;
+        sum += coef[k] * d;
     }
 
-    long long sum = 0;
-    for (int w = 0; w < word_count - 1; w++)
-        sum += word_value(words[w]);
-
-    return sum == word_value(words[word_count - 1]);
+    return sum == 0;
 }
 
 int search(int k) {
@@ -129,6 +148,7 @@ int solve_rebus(const char* rebus, char* result) {
         return 0;
     if (!collect_letters())
         return 0;
+    compute_coefficients();
 
     memset(used, 0, sizeof(used));
     memset(digit_of, 0, sizeof(digit_of));
